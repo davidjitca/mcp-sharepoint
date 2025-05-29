@@ -1,8 +1,17 @@
 import base64, os
 from functools import wraps
 from typing import Optional, Dict, Any
-from .common import logger, mcp, SHP_DOC_LIBRARY, sp_context
+from .common import logger, mcp, SHP_DOC_LIBRARY
+from . import resources
+from office365.sharepoint.client_context import ClientContext
 from .resources import list_folders, list_documents, get_document_content
+
+# Global placeholder
+sp_context: ClientContext = None
+
+def init(context: ClientContext):
+    global sp_context
+    sp_context = context
 
 # Helper functions to reduce code duplication
 def _get_path(folder: str = "", file: Optional[str] = None) -> str:
@@ -28,6 +37,10 @@ def _file_success_response(file_obj, message: str) -> Dict[str, Any]:
         "message": message,
         "file": {"name": file_obj.name, "url": file_obj.serverRelativeUrl}
     }
+
+@mcp.tool(name="ping", description="Health check method for SuperGateway")
+async def ping_tool():
+    return {"pong": True}
 
 # Tool implementations
 @mcp.tool(name="List_SharePoint_Folders", description="List folders in the specified SharePoint directory or root if not specified")

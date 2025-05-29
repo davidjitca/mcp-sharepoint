@@ -1,43 +1,37 @@
-import os, logging
+# common.py
+
+import os
+import logging
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-from office365.sharepoint.client_context import ClientContext
-from office365.runtime.auth.client_credential import ClientCredential
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler('mcp_sharepoint.log'), logging.StreamHandler()]
-)
+# Logging setup
 logger = logging.getLogger('mcp_sharepoint')
+logger.setLevel(logging.DEBUG)
+
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(levelname)s] %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 # Load environment variables
 load_dotenv()
 
-# Configuration
-SHP_ID_APP = os.getenv('SHP_ID_APP')
-SHP_ID_APP_SECRET = os.getenv('SHP_ID_APP_SECRET')
 SHP_SITE_URL = os.getenv('SHP_SITE_URL')
-SHP_DOC_LIBRARY = os.getenv('SHP_DOC_LIBRARY', 'Shared Documents/mcp_server')
+SHP_CLIENT_ID = os.getenv('SHP_CLIENT_ID')
 SHP_TENANT_ID = os.getenv('SHP_TENANT_ID')
+SHP_DOC_LIBRARY = os.getenv('SHP_DOC_LIBRARY')
+SHP_SITE_BASE_URL = os.getenv("SHP_SITE_BASE_URL", "")
 
-if not SHP_SITE_URL:
-    logger.error("SHP_SITE_URL environment variable not set.")
-    raise ValueError("SHP_SITE_URL environment variable not set.")
-if not SHP_ID_APP:
-    logger.error("SHP_ID_APP environment variable not set.")
-    raise ValueError("SHP_ID_APP environment variable not set.")
-if not SHP_ID_APP_SECRET:
-    logger.error("SHP_ID_APP_SECRET environment variable not set.")
-    raise ValueError("SHP_ID_APP_SECRET environment variable not set.")
+SHAREPOINT_WEB_VIEW_PREFIX = f"{SHP_SITE_URL}/Shared%20Documents/Forms/AllItems.aspx?id="
 
-# Initialize MCP server
+# Validate config
+if not SHP_SITE_URL or not SHP_CLIENT_ID or not SHP_TENANT_ID:
+    raise ValueError("Missing SharePoint auth configuration.")
+
+# Only initialize FastMCP here
 mcp = FastMCP(
     name="mcp_sharepoint",
-    instructions=f"This server provides tools to interact with SharePoint documents and folders in {SHP_DOC_LIBRARY}"
+    instructions=f"This server provides tools to interact with SharePoint at {SHP_SITE_URL}"
 )
-
-# Initial SharePoint context
-credentials = ClientCredential(SHP_ID_APP, SHP_ID_APP_SECRET)
-sp_context = ClientContext(SHP_SITE_URL).with_credentials(credentials)
